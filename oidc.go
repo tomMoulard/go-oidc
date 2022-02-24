@@ -56,11 +56,22 @@ func ClientContext(ctx context.Context, client *http.Client) context.Context {
 	return context.WithValue(ctx, oauth2.HTTPClient, client)
 }
 
+type HTTPClientOptions struct{}
+
+func ClientOptionsContext(ctx context.Context, options map[string]string) context.Context {
+	return context.WithValue(ctx, HTTPClientOptions{}, options)
+}
+
 func doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
 	client := http.DefaultClient
 	if c, ok := ctx.Value(oauth2.HTTPClient).(*http.Client); ok {
 		client = c
 	}
+	q := req.URL.Query()
+	for key, value := range(ctx.Value(HTTPClientOptions{}).(map[string]string)) {
+		q.Add(key, value)
+	}
+	req.URL.RawQuery = q.Encode()
 	return client.Do(req.WithContext(ctx))
 }
 
